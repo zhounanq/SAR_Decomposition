@@ -14,9 +14,10 @@ Author: Zhou Ya'nan
 Date: 2021-09-16
 """
 import os
-import math
 import numpy as np
 import rasterio
+
+os.environ['PROJ_LIB'] = r'D:\develop-envi\anaconda3\envs\py38d\Lib\site-packages\pyproj\proj_dir\share\proj'
 
 
 def stokes_decomposition_s1(c2metrix_path, pol_mode, stokes_path):
@@ -65,19 +66,16 @@ def stokes_decomposition_s1(c2metrix_path, pol_mode, stokes_path):
     delta2 = 4 * a * c
     delta = delta1 - delta2
 
-    mv1 = -b + math.sqrt(delta)
+    mv1 = -b + np.sqrt(delta)
     mv1 = mv1 / (2 * a)
-    mv2 = (-b - math.sqrt(delta))
+    mv2 = (-b - np.sqrt(delta))
     mv2 = mv2 / (2 * a)
 
-    """ check which solution satisfes s1 > mv """
-    # ind1 = np.where(s1 > 0)[0]  # exclude pixels outside the imaged scene
-    # flag = np.zeros(2, dtype=bool)
-    # flag[0] = np.all(s1[ind1] <= mv1[ind1])
-    # flag[1] = np.all(s1[ind1] <= mv2[ind1])
-
-    ind = np.where(s1 > 0)  # exclude pixels outside the imaged scene
-    flag = [np.isnan(np.where(s1[ind] > mv1[ind], 1)) for i in range(2)]
+    """ check which solution satisfies s1 > mv """
+    ind = np.nonzero(s1 > 0)  # exclude pixels outside the imaged scene
+    flag = np.zeros(2, dtype=bool)
+    flag[0] = np.all(s1[ind] <= mv1[ind])
+    flag[1] = np.all(s1[ind] <= mv2[ind])
 
     """ obtain mv, mp, alpha and delta (polarized term) """
     if not flag[0]:
@@ -103,3 +101,24 @@ def stokes_decomposition_s1(c2metrix_path, pol_mode, stokes_path):
     # cleanup
     return stokes_path
 
+
+def main():
+    print("##########################################################")
+    print("### Sentinel-1 Pol Decomposition #########################")
+    print("##########################################################")
+
+    # cmd line
+    # opts = parse_args()
+    # dataset = opts.dataset
+
+    c2metrix_path = r'J:\FF\experiment_dataset\2022-franch_agri\s1_slc\S1A_IW_SLC__1SDV\1_1\S1A_IW_SLC__1SDV_20190503T055125_20190503T055152_027059_030C51_B1FD_Orb_Cal_Deb1_mat_Spk_TC.tif'
+    stokes_path = r'J:\FF\experiment_dataset\2022-franch_agri\s1_slc\S1A_IW_SLC__1SDV\1_1\S1A_IW_SLC__1SDV_20190503T055125_20190503T055152_027059_030C51_B1FD_Orb_Cal_Deb1_mat_Spk_TC_STOKES.tif'
+    pol_mode = 'VH-VV'
+
+    result = stokes_decomposition_s1(c2metrix_path, pol_mode, stokes_path)
+
+    print("### Complete! #############################################")
+
+
+if __name__ == "__main__":
+    main()
